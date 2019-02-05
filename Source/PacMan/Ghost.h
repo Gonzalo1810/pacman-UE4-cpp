@@ -10,6 +10,7 @@ UCLASS()
 class PACMAN_API AGhost : public AActor
 {
 	GENERATED_BODY()
+
 	
 public:	
 	// Sets default values for this actor's properties
@@ -50,5 +51,9 @@ public:
 	FVector pathDirection;
 	FVector pathLocation;
 	bool haveToChangeDirection;
+
+private:
+	
+	FVector getNextDirection(class APathPoint* pathPoint);
 	
 };

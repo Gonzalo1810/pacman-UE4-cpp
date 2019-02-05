@@ -27,6 +27,12 @@ protected:
 			bool bFromSweep,
 			const FHitResult &SweepResult);
 
+	UFUNCTION()
+		void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, 
+			class AActor* OtherActor,
+			class UPrimitiveComponent* OtherComp,
+			int32 OtherBodyIndex);
+
 	void changeDirection();
 
 public:	
@@ -63,6 +69,10 @@ protected:
 	bool haveToChangeDirection;
 
 	class USphereComponent * collider;
+
+	bool isStopped;
+	class APathPoint * pathPointOverlap;
+	bool isOnPathPoint;
 
 	
 };

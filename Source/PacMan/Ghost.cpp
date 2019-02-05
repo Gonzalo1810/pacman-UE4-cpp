@@ -33,7 +33,7 @@ void AGhost::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Othe
 	APathPoint* pathPoint = Cast<APathPoint>(OtherActor);
 	if (pathPoint) 
 	{
-		pathDirection = pathPoint->getDirection();
+		pathDirection = getNextDirection(pathPoint);
 		pathLocation = pathPoint->GetActorLocation();
 		haveToChangeDirection = true;
 
@@ -59,7 +59,6 @@ void AGhost::Tick(float DeltaTime)
 			SetActorLocation(pathLocation);
 			changeSpeed();
 		}
-			
 	}
 }
 
@@ -72,5 +71,27 @@ void AGhost::setStartSpeed()
 void AGhost::changeSpeed()
 {
 	direction = pathDirection * speed;
+}
+
+FVector AGhost::getNextDirection(APathPoint* pathPoint)
+{
+	if (pathDirection == FVector(1, 0, 0))
+	{
+		return pathPoint->getNextDirection(3);
+	}
+	else if (pathDirection == FVector(-1, 0, 0))
+	{
+		return pathPoint->getNextDirection(2);
+	}
+	else if (pathDirection == FVector(0, 1, 0))
+	{
+		return pathPoint->getNextDirection(0);
+	}
+	else if (pathDirection == FVector(0, -1, 0))
+	{
+		return pathPoint->getNextDirection(1);
+	}
+
+	return FVector(0, 0, 0);
 }
 

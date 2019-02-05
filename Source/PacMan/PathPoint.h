@@ -24,12 +24,22 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	FVector getDirection();
-	FVector getNextDirection();
+
+	/**
+	 * SIDE Direction where pawn come
+	 * @param SIDE: 0 up, 1 down, 2 left, 3 right
+	 */
+	FVector getNextDirection(int side);
+
+	bool haveSide(int side);
 
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	AActor * player;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		int numberOfSides;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool up;
@@ -39,5 +49,11 @@ public:
 		bool left;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool right;
+
+private:
+
+	FVector getDirTwoSides(int side);
+	FVector getDirThreeSides(int side);
+	FVector getDirFourSides();
 	
 };
