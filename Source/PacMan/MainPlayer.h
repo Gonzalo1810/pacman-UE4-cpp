@@ -27,13 +27,9 @@ protected:
 			bool bFromSweep,
 			const FHitResult &SweepResult);
 
-	UFUNCTION()
-		void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, 
-			class AActor* OtherActor,
-			class UPrimitiveComponent* OtherComp,
-			int32 OtherBodyIndex);
 
 	void changeDirection();
+
 
 public:	
 	// Called every frame
@@ -62,6 +58,8 @@ protected:
 	Direction nextDirection;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		float startSpeed = 300;
+
 	float speed;
 
 	FVector direction;
@@ -72,7 +70,25 @@ protected:
 
 	bool isStopped;
 	class APathPoint * pathPointOverlap;
-	bool isOnPathPoint;
+	bool haveToStop;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int totalScore;
+
+	class APlayerController *  controller;
+
+	FTimerHandle UnusedHandle;
+
+public:
+	
+	UFUNCTION(BlueprintNativeEvent, Category = "Score")
+	void addScore(int score);
+
+	void setSpeed(float newSpeed) { speed = newSpeed; }
+	float getSpeed()const { return speed; }
+
+	void boostSpeed(float newSpeed, float time);
+	void normalSpeed();
 
 	
 };

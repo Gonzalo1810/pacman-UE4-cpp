@@ -26,39 +26,6 @@ void APathPoint::Tick(float DeltaTime)
 
 }
 
-FVector APathPoint::getDirection()
-{
-	float offsetX, offsetY;
-
-	if (player == nullptr)
-		player = UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn();
-
-	offsetY = player->GetActorLocation().Y - this->GetActorLocation().Y;
-	offsetX = player->GetActorLocation().X - this->GetActorLocation().X;
-
-	if (abs(offsetX) > abs(offsetY)) 
-	{
-		if (offsetX >= 0)
-		{
-			return FVector(1, 0, 0);
-		}
-		else
-		{
-			return FVector(-1, 0, 0);
-		}
-	}
-	else
-	{
-		if (offsetY >= 0)
-		{
-			return FVector(0, 1, 0);
-		}
-		else
-		{
-			return FVector(0, -1, 0);
-		}
-	}
-}
 
 /**
  * SIDE Direction where pawn come
@@ -84,8 +51,9 @@ FVector APathPoint::getNextDirection(int side)
 	}
 	else if (numberOfSides == 4)
 	{
-		return getDirFourSides();
+		return getDirFourSides(side);
 	}
+	else GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("ERROR"));
 
 
 	return FVector(0, 0, 0);
@@ -94,6 +62,7 @@ FVector APathPoint::getNextDirection(int side)
 
 FVector APathPoint::getDirTwoSides(int side)
 {
+
 	if (side != 0 && up) return FVector(0, -1, 0);
 	else if (side != 1 && down) return FVector(0, 1, 0);
 	else if (side != 2 && left) return FVector(-1, 0, 0);
@@ -111,68 +80,95 @@ FVector APathPoint::getDirThreeSides(int side)
 	offsetY = player->GetActorLocation().Y - this->GetActorLocation().Y;
 	offsetX = player->GetActorLocation().X - this->GetActorLocation().X;
 
-	if (abs(offsetX) > abs(offsetY))
+	sideEnable(side, false);
+	int option = calculateBetterOption(offsetX, offsetY, side);
+	sideEnable(side, true);
+
+	//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Cyan,FString::Printf( TEXT("Option: %i"), option));
+
+	switch (option)
 	{
-		if (left && right)
-		{
-			if(offsetX >= 0) return FVector(1, 0, 0);
-			else return FVector(-1, 0, 0);
-		}
-		else if (!left && offsetX < 0 || !right && offsetX >= 0)
-		{
-			if (offsetY >= 0) return FVector(0, 1, 0);
-			else return FVector(0, -1, 0);
-		}
-	}
-	else
-	{
-		if (up && down)
-		{
-			if (offsetY >= 0) return FVector(0, 1, 0);
-			else return FVector(0, -1, 0);
-		}
-		else if (!up && offsetY < 0 || !down && offsetY >= 0)
-		{
-			if (offsetX >= 0) return FVector(1, 0, 0);
-			else return FVector(-1, 0, 0);
-		}
+	case 0:
+		return FVector(0, -1, 0);
+	case 1:
+		return FVector(0, 1, 0);
+	case 2:
+		return FVector(-1, 0, 0);
+	case 3:
+		return FVector(1, 0, 0);
+	default:
+		return FVector(0, 0, 0);
 	}
 
-	return FVector(0, 0, 0);
 }
 
-FVector APathPoint::getDirFourSides()
+int APathPoint::calculateBetterOption(float offsetX, float offsetY, int side)
 {
-	float offsetX, offsetY;
+	int betterOption = -1;
 
-	if (player == nullptr)
-		player = UGameplayStatics::GetPlayerController(GetWorld(), 0)->GetPawn();
-
-	offsetY = player->GetActorLocation().Y - this->GetActorLocation().Y;
-	offsetX = player->GetActorLocation().X - this->GetActorLocation().X;
-
-	if (abs(offsetX) > abs(offsetY))
+	if (abs(offsetX) > abs(offsetY) && (left || right))
 	{
 		if (offsetX >= 0)
 		{
-			return FVector(1, 0, 0);
+			if (right) betterOption = 3;
+			else if (offsetY >= 0 && down) betterOption = 1;
+			else if (up) betterOption = 0;
+			else betterOption = 2;
 		}
 		else
 		{
-			return FVector(-1, 0, 0);
+			if (left) betterOption = 2;
+			else if (offsetY >= 0 && down) betterOption = 1;
+			else if (up) betterOption = 0;
+			else betterOption = 3;
 		}
 	}
 	else
 	{
 		if (offsetY >= 0)
 		{
-			return FVector(0, 1, 0);
+			if (down) betterOption = 1;
+			else if (offsetX >= 0 && right) betterOption = 3;
+			else if (left) betterOption = 2;
+			else betterOption = 0;
 		}
 		else
 		{
-			return FVector(0, -1, 0);
+			if (up) betterOption = 0;
+			else if (offsetX >= 0 && right) betterOption = 3;
+			else if (left) betterOption = 2;
+			else betterOption = 1;
 		}
 	}
+
+
+	return betterOption;
+}
+
+void APathPoint::sideEnable(int side, bool enable)
+{
+	switch (side)
+	{
+	case 0:
+		up = enable;
+		break;
+	case 1:
+		down = enable;
+		break;
+	case 2:
+		left = enable;
+		break;
+	case 3:
+		right = enable;
+		break;
+	default:
+		break;
+	}
+}
+
+FVector APathPoint::getDirFourSides(int side)
+{
+	return getDirThreeSides(side);
 }
 
 bool APathPoint::haveSide(int side)

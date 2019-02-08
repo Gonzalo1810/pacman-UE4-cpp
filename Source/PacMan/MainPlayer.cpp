@@ -2,6 +2,8 @@
 
 #include "MainPlayer.h"
 #include "PathPoint.h"
+#include "Coint.h"
+
 #include "Components/SphereComponent.h"
 #include <Engine.h>
 #include "Components/InputComponent.h"
@@ -15,16 +17,13 @@ AMainPlayer::AMainPlayer()
 	direction = FVector(0, 0, 0);
 	haveToChangeDirection = false;
 	isStopped = false;
-	isOnPathPoint = false;
-
 }
-
 
 void AMainPlayer::BeginPlay()
 {
 	Super::BeginPlay();
-	APlayerController * controller = UGameplayStatics::GetPlayerController(GetWorld(), 0);
-	speed = 200;
+	controller = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	speed = startSpeed;
 	direction = FVector(speed, 0, 0);
 
 	currentDirection = RIGHT;
@@ -33,7 +32,10 @@ void AMainPlayer::BeginPlay()
 
 	collider = dynamic_cast<USphereComponent*>(GetComponentByClass(USphereComponent::StaticClass()));
 	if (collider)
+	{
 		collider->OnComponentBeginOverlap.AddDynamic(this, &AMainPlayer::BeginOverlap);
+	}
+		
 	
 
 	EnableInput(controller);
@@ -55,6 +57,8 @@ void AMainPlayer::Tick(float DeltaTime)
 		}
 	}
 
+	//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red,FString::Printf(TEXT("%i"), isStopped));
+
 }
 
 void AMainPlayer::BeginOverlap(UPrimitiveComponent* OverlappedComponent,
@@ -67,27 +71,78 @@ void AMainPlayer::BeginOverlap(UPrimitiveComponent* OverlappedComponent,
 	APathPoint* pathPoint = Cast<APathPoint>(OtherActor);
 	if (pathPoint)
 	{
-		isOnPathPoint = true;
+		//GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, TEXT("Overlap"));
 		pathPointOverlap = pathPoint;
-		if (!pathPoint->haveSide(nextDirection) && !pathPoint->haveSide(currentDirection))
+		
+		if (pathPoint->haveSide(nextDirection))
+		{
+			pathPointPosition = pathPoint->GetActorLocation();
+			haveToChangeDirection = true;
+		}
+		else if (!pathPoint->haveSide(currentDirection))
 		{
 			isStopped = true;
 			pathPointOverlap = pathPoint;
 			pathPointPosition = pathPoint->GetActorLocation();
 		}
-		else
-		{
-			pathPointPosition = pathPoint->GetActorLocation();
-			haveToChangeDirection = true;
-		}
+	}
+	else if (Cast<ACoint>(OtherActor))
+	{
+		ACoint * coint = Cast<ACoint>(OtherActor);
+		addScore(coint->getScore());
+		coint->contact(this);
+		coint->Destroy();
 	}
 }
 
-
-void AMainPlayer::OnOverlapEnd(class UPrimitiveComponent* OverlappedComp,
-	class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void AMainPlayer::addScore_Implementation(int score)
 {
-	isOnPathPoint = false;
+
+}
+
+void AMainPlayer::boostSpeed(float newSpeed, float time)
+{
+	speed = newSpeed;
+	switch (currentDirection)
+	{
+	case UP:
+		direction = FVector(0, -speed, 0);
+		break;
+	case DOWN:
+		direction = FVector(0, speed, 0);
+		break;
+	case LEFT:
+		direction = FVector(-speed, 0, 0);
+		break;
+	case RIGHT:
+		direction = FVector(speed, 0, 0);
+		break;
+	default:
+		break;
+	}
+	GetWorld()->GetTimerManager().SetTimer(UnusedHandle, this, &AMainPlayer::normalSpeed, 1.0f, false, time);
+}
+
+void AMainPlayer::normalSpeed()
+{
+	speed = 300;
+	switch (currentDirection)
+	{
+	case UP:
+		direction = FVector(0, -speed, 0);
+		break;
+	case DOWN:
+		direction = FVector(0, speed, 0);
+		break;
+	case LEFT:
+		direction = FVector(-speed, 0, 0);
+		break;
+	case RIGHT:
+		direction = FVector(speed, 0, 0);
+		break;
+	default:
+		break;
+	}
 }
 
 
@@ -127,19 +182,19 @@ void AMainPlayer::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	InputComponent->BindAction("Right", IE_Pressed, this, &AMainPlayer::GoRight);
 }
 
-
 void AMainPlayer::GoUp() 
 {
-	if (currentDirection == DOWN)
-	{
-		direction = FVector(0, -speed, 0);
-		currentDirection = UP;
-	}
-	else if (isStopped && pathPointOverlap->haveSide(UP))
+	
+	if (isStopped && pathPointOverlap->haveSide(UP))
 	{
 		isStopped = false;
 		haveToChangeDirection = false;
 		SetActorLocation(pathPointPosition);
+		direction = FVector(0, -speed, 0);
+		currentDirection = UP;
+	}
+	if (currentDirection == DOWN)
+	{
 		direction = FVector(0, -speed, 0);
 		currentDirection = UP;
 	}
@@ -149,16 +204,17 @@ void AMainPlayer::GoUp()
 
 void AMainPlayer::GoDown()
 {
-	if (currentDirection == UP)
-	{
-		direction = FVector(0, speed, 0);
-		currentDirection = DOWN;
-	}
-	else if (isStopped && pathPointOverlap->haveSide(DOWN))
+	
+	if (isStopped && pathPointOverlap->haveSide(DOWN))
 	{
 		isStopped = false;
 		haveToChangeDirection = false;
 		SetActorLocation(pathPointPosition);
+		direction = FVector(0, speed, 0);
+		currentDirection = DOWN;
+	}
+	if (currentDirection == UP)
+	{
 		direction = FVector(0, speed, 0);
 		currentDirection = DOWN;
 	}
@@ -169,18 +225,19 @@ void AMainPlayer::GoDown()
 
 void AMainPlayer::GoLeft()
 {
-	if (currentDirection == RIGHT)
-	{
-		direction = FVector(-speed, 0, 0);
-		currentDirection = LEFT;
-	}
-	else if (isStopped && pathPointOverlap->haveSide(LEFT))
+	
+	if (isStopped && pathPointOverlap->haveSide(LEFT))
 	{
 		isStopped = false;
 		haveToChangeDirection = false;
 		SetActorLocation(pathPointPosition);
 		direction = FVector(-speed, 0, 0);
 		currentDirection = LEFT;
+	}
+	else if (currentDirection == RIGHT)
+	{
+	direction = FVector(-speed, 0, 0);
+	currentDirection = LEFT;
 	}
 	
 	nextDirection = LEFT;
@@ -189,12 +246,7 @@ void AMainPlayer::GoLeft()
 
 void AMainPlayer::GoRight()
 {
-	if (currentDirection == LEFT)
-	{
-		direction = FVector(speed, 0, 0);
-		currentDirection = RIGHT;
-	}
-	else if (isStopped && pathPointOverlap->haveSide(RIGHT))
+	if (isStopped && pathPointOverlap->haveSide(RIGHT))
 	{
 		isStopped = false;
 		haveToChangeDirection = false;
@@ -202,6 +254,12 @@ void AMainPlayer::GoRight()
 		direction = FVector(speed, 0, 0);
 		currentDirection = RIGHT;
 	}
+	else if (currentDirection == LEFT)
+	{
+		direction = FVector(speed, 0, 0);
+		currentDirection = RIGHT;
+	}
+	
 
 	nextDirection = RIGHT;
 }

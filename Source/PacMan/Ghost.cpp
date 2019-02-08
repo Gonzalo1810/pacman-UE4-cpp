@@ -13,8 +13,6 @@ AGhost::AGhost()
 	PrimaryActorTick.bCanEverTick = true;
 	haveToChangeDirection = false;
 
-	box = CreateDefaultSubobject<UBoxComponent>(TEXT("Box"));
-	box->OnComponentBeginOverlap.AddDynamic(this, &AGhost::OnBoxBeginOverlap);
 
 }
 
@@ -22,9 +20,14 @@ AGhost::AGhost()
 void AGhost::BeginPlay()
 {
 	Super::BeginPlay();
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("1!"));
-	GetWorld()->GetTimerManager().SetTimer(UnusedHandle, this, &AGhost::setStartSpeed, 1.0f, true, startTime);
-	
+
+	UBoxComponent * collider = dynamic_cast<UBoxComponent*>(GetComponentByClass(UBoxComponent::StaticClass()));
+
+	if(collider)
+		collider->OnComponentBeginOverlap.AddDynamic(this, &AGhost::OnBoxBeginOverlap);
+
+	GetWorld()->GetTimerManager().SetTimer(UnusedHandle, this, &AGhost::setStartSpeed, 1.0f, false, startTime);
+	   	
 }
 
 void AGhost::OnBoxBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -65,7 +68,7 @@ void AGhost::Tick(float DeltaTime)
 void AGhost::setStartSpeed()
 {
 	direction = startingDirection * speed;
-	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Yellow, TEXT("2!"));
+	pathDirection = startingDirection;
 }
 
 void AGhost::changeSpeed()
@@ -77,11 +80,11 @@ FVector AGhost::getNextDirection(APathPoint* pathPoint)
 {
 	if (pathDirection == FVector(1, 0, 0))
 	{
-		return pathPoint->getNextDirection(3);
+		return pathPoint->getNextDirection(2);
 	}
 	else if (pathDirection == FVector(-1, 0, 0))
 	{
-		return pathPoint->getNextDirection(2);
+		return pathPoint->getNextDirection(3);
 	}
 	else if (pathDirection == FVector(0, 1, 0))
 	{
