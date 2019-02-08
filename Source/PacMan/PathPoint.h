@@ -22,9 +22,7 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
-
-	FVector getDirection();
-
+	
 	/**
 	 * SIDE Direction where pawn come
 	 * @param SIDE: 0 up, 1 down, 2 left, 3 right
@@ -54,6 +52,8 @@ private:
 
 	FVector getDirTwoSides(int side);
 	FVector getDirThreeSides(int side);
-	FVector getDirFourSides();
+	FVector getDirFourSides(int side);
+	int calculateBetterOption(float offsetX, float offsetY,int side);
+	void sideEnable(int side, bool enable);
 	
 };
